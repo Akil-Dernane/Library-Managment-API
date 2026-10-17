@@ -44,6 +44,13 @@ namespace Library_API.Repositories
         {
             return await _context.Books.FindAsync(id);
         }
+
+        public async Task<List<Book>> GetByIds(IEnumerable<int> ids)
+        {
+            return await _context.Books
+                .Where(b => ids.Contains(b.Id))
+                .ToListAsync();
+        }
         public async Task<Book?> GetByIdWithRelationships(int id)
         {
             return await _context.Books
@@ -56,11 +63,7 @@ namespace Library_API.Repositories
         {
             return await _context.Books
                 .Where(b => b.Id == id)
-                .Select(b => new BookResponseDto(
-                    b.Id,
-                    b.Name,
-                    b.Pages,
-                    b.IsAvailable))
+                .Select(BookMapping.ToDtoExpression)
                 .FirstOrDefaultAsync();
         }
 

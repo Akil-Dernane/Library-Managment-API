@@ -1,4 +1,4 @@
-﻿using Library_API.Models;
+﻿using Library_API.DTOs.Category;
 using Library_API.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
@@ -15,32 +15,38 @@ namespace Library_API.Controllers_2
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Category>>> GetAll()
+        public async Task<ActionResult<IEnumerable<CategoryResponseDto>>> GetAll()
         {
             return Ok(await _categoryService.GetAll());
         }
 
         [HttpGet("{id:int:min(1)}")]
-        public async Task<ActionResult<Category>> GetById(int id)
+        public async Task<ActionResult<CategoryResponseDto>> GetDtoById(int id)
         {
-            return Ok(await _categoryService.GetById(id));
+            return Ok(await _categoryService.GetDtoById(id));
+        }
+
+        [HttpGet("{id:int:min(1)}/details")]
+        public async Task<ActionResult<CategoryDetailsDto>> GetByIdWithRelationships(int id)
+        {
+            return Ok(await _categoryService.GetByIdWithRelationships(id));
         }
 
         [HttpPost]
-        public async Task<ActionResult<Category>> Create(Category category)
+        public async Task<ActionResult<CategoryResponseDto>> Create(CreateCategoryDto dto)
         {
-            Category created = await _categoryService.Create(category);
+            CategoryResponseDto created = await _categoryService.Create(dto);
 
             return CreatedAtAction(
-                nameof(GetById),
+                nameof(GetDtoById),
                 new { id = created.Id },
                 created);
         }
 
         [HttpPut("{id:int:min(1)}")]
-        public async Task<IActionResult> Update(int id, Category category)
+        public async Task<IActionResult> Update(int id, UpdateCategoryDto dto)
         {
-            await _categoryService.Update(id, category);
+            await _categoryService.Update(id, dto);
             return NoContent();
         }
 

@@ -7,7 +7,7 @@ namespace Library_API.Mappings
 {
     public static class AuthorMapping
     {
-        public static Expression<Func<Book, AuthorResponseDto>>
+        public static Expression<Func<Author, AuthorResponseDto>>
            ToDtoExpression =>
            a => new AuthorResponseDto(
                a.Id,
@@ -20,6 +20,22 @@ namespace Library_API.Mappings
                 a.Id,
                 a.Name
                 );
+        }
+
+        public static AuthorDetailsDto ToDetailsDto(this Author a)
+        {
+            return new(
+                a.ToDto(),
+                a.Books.Select(a => a.ToDto()).ToList()
+                );
+        }
+
+        public static Author ToEntity(this CreateAuthorDto dto)
+        {
+            return new()
+            {
+                Name = dto.Name,
+            };
         }
     }
 }

@@ -1,4 +1,5 @@
-﻿using Library_API.Models;
+﻿using Library_API.DTOs.Author;
+using Library_API.Models;
 using Library_API.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
@@ -14,20 +15,25 @@ namespace Library_API.Controllers_2
             _authorService = service;
         }
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Author>>> GetAll() {
+        public async Task<ActionResult<IEnumerable<AuthorResponseDto>>> GetAll() {
             return Ok(await _authorService.GetAll());
         }
         [HttpGet("{id:int:min(1)}")]
-        public async Task<ActionResult<Author>> GetById(int id)
+        public async Task<ActionResult<AuthorResponseDto>> GetById(int id)
         {
-            return Ok(await _authorService.GetById(id));
+            return Ok(await _authorService.GetDtoById(id));
+        }
+        [HttpGet("{id:int:min(1)}/details")]
+        public async Task<ActionResult<AuthorDetailsDto>> GetByIdWithRelationships(int id)
+        {
+            return Ok(await _authorService.GetByIdWithRelationships(id));
         }
 
         [HttpPost]
-        public async Task<ActionResult<Author>> Create(Author author)
+        public async Task<ActionResult<AuthorResponseDto>> Create(CreateAuthorDto dto)
         {
-            Author created = await _authorService.Create(author);
-            return CreatedAtAction(nameof(GetById),new {id = created.Id}, author);
+            AuthorResponseDto created = await _authorService.Create(dto);
+            return CreatedAtAction(nameof(GetById),new {id = created.Id}, created);
         }
 
         [HttpPut("{id:int:min(1)}")]
