@@ -1,6 +1,7 @@
 
 using Library_API.Data;
 using Library_API.Exceptions;
+using Library_API.Middlewares;
 using Library_API.Models;
 using Library_API.Repositories;
 using Library_API.Repositories.Interfaces;
@@ -57,6 +58,7 @@ namespace Library_API
                 app.MapOpenApi();
             }
 
+            app.UseMiddleware<RequestLoggingMiddleware>();
             app.UseExceptionHandler();
 
             app.UseHttpsRedirection();

@@ -37,8 +37,10 @@ namespace Library_API.Exceptions
             var problem = new ProblemDetails
             {
                 Status = statusCode, 
-                Title = title,
-                Detail = exception?.Message,
+                Title = title,  
+                Detail = statusCode == StatusCodes.Status500InternalServerError
+                    ? "An unexpected error occurred."
+                    : exception.Message
             };
 
             httpContext.Response.StatusCode = statusCode;
