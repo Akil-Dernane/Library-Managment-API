@@ -1,4 +1,6 @@
-﻿using Library_API.Exceptions;
+﻿using Library_API.DTOs.Members;
+using Library_API.Exceptions.Member;
+using Library_API.Mappings;
 using Library_API.Models;
 using Library_API.Repositories.Interfaces;
 using Library_API.Services.Interfaces;
@@ -14,9 +16,10 @@ namespace Library_API.Services
             _memberRepository = memberRepository;
         }
 
-        public async Task<Member> Create(Member member)
+        public async Task<MemberResponseDto> Create(CreateMemberDto dto)
         {
-            return await _memberRepository.Create(member);
+            Member member = new Member().ToEntity(dto);
+            return (await _memberRepository.Create(member)).ToDto();
         }
 
         public async Task Delete(int id)
@@ -26,26 +29,28 @@ namespace Library_API.Services
                 throw new MemberNotFoundException(id);
         }
 
-        public async Task<IEnumerable<Member>> GetAll()
+        public async Task<IEnumerable<MemberResponseDto>> GetAll()
         {
             return await _memberRepository.GetAll();
         }
 
-        public async Task<Member> GetById(int id)
+        public async Task<MemberResponseDto> GetDtoById(int id)
         {
-            Member? member = await _memberRepository.GetById(id);
+            return await _memberRepository.GetDtoById(id) ?? throw new MemberNotFoundException(id);
+        }
 
-            if(member == null)
-                throw new MemberNotFoundException(id);
+        public async Task<Member?> GetById(int id)
+        {
+            Member member = await _memberRepository.GetById(id) ?? throw new MemberNotFoundException(id);
 
             return member;
         }
 
-        public async Task Update(int id, Member member)
+        public async Task Update(int id, UpdateMemberDto dto)
         {
-            bool updated = await _memberRepository.Update(id, member);
-            if(!updated)
-                throw new MemberNotFoundException(id);
+            Member member = await _memberRepository.GetById(id) ?? throw new MemberNotFoundException(id);
+            member.UpdateEntity(dto);
+            await _memberRepository.SaveChangesAsync();
         }
     }
 }

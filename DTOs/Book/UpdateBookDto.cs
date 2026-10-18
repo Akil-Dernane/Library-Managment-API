@@ -11,8 +11,8 @@ namespace Library_API.DTOs.Book
 
         [Required]
         public bool IsAvailable { get; set; }
-        public List<int>? AuthorIds { get; set; } = new();
-        public List<int>? CategoryIds { get; set; } = new();
+        public List<int>? AuthorIds { get; set; }
+        public List<int>? CategoryIds { get; set; }
 
     }
 }

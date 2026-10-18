@@ -11,7 +11,7 @@ namespace Library_API.Services.Interfaces
         Task<AuthorResponseDto> GetDtoById(int id);
         Task<AuthorDetailsDto> GetByIdWithRelationships(int id);
         Task<AuthorResponseDto> Create(CreateAuthorDto dto);
-        Task Update(int id,Author author);
+        Task Update(int id, UpdateAuthorDto dto);
         Task Delete(int id);
     }
 }

@@ -14,15 +14,25 @@ namespace Library_API.Exceptions
         }
         public async ValueTask<bool> TryHandleAsync(HttpContext httpContext, Exception exception, CancellationToken cancellationToken)
         {
-            _logger.LogError(exception, "Unhandled exception occurred");
             var (statusCode, title) = exception switch
             {
                 EntityNotFoundException => (StatusCodes.Status404NotFound, "Resource Not Found"),
 
                 ArgumentOutOfRangeException => (StatusCodes.Status400BadRequest, "Invalid Request"),
 
+                ConflictException => (StatusCodes.Status409Conflict, "Conflict"),
+
                 _ => (StatusCodes.Status500InternalServerError, "An unexpected error occurred")
             };
+
+            var logLevel = statusCode switch
+            {
+                StatusCodes.Status500InternalServerError => LogLevel.Error,
+                StatusCodes.Status409Conflict => LogLevel.Warning,
+                _ => LogLevel.Information
+            };
+
+            _logger.Log(logLevel, exception, "Request failed with status code {StatusCode}", statusCode);
 
             var problem = new ProblemDetails
             {

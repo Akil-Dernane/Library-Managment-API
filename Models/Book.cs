@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Library_API.Exceptions.Book;
+using System.ComponentModel.DataAnnotations;
 
 namespace Library_API.Models
 {
@@ -13,6 +14,17 @@ namespace Library_API.Models
         public List<Category> Categories { get; set; } = new();
         public List<Author> Authors { get; set; } = new();
 
+        public void Borrow()
+        {
+            if (!this.IsAvailable)
+                throw new BookNotAvailableException(this.Id);
 
+            IsAvailable = false;
+        }
+
+        public void Return()
+        {
+            IsAvailable = true;
+        }
     }
 }

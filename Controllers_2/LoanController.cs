@@ -1,4 +1,5 @@
-﻿using Library_API.Models;
+﻿using Library_API.DTOs.Loan;
+using Library_API.Models;
 using Library_API.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
@@ -15,21 +16,21 @@ namespace Library_API.Controllers_2
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Loan>>> GetAll()
+        public async Task<ActionResult<IEnumerable<LoanResponseDto>>> GetAll()
         {
             return Ok(await _loanService.GetAll());
         }
 
         [HttpGet("{id:int:min(1)}")]
-        public async Task<ActionResult<Loan>> GetById(int id)
+        public async Task<ActionResult<LoanResponseDto>> GetById(int id)
         {
             return Ok(await _loanService.GetById(id));
         }
 
         [HttpPost]
-        public async Task<ActionResult<Loan>> Create(Loan loan)
+        public async Task<ActionResult<LoanResponseDto>> Create(CreateLoanDto dto)
         {
-            Loan created = await _loanService.Create(loan);
+            LoanResponseDto created = await _loanService.Create(dto);
 
             return CreatedAtAction(
                 nameof(GetById),
@@ -37,10 +38,10 @@ namespace Library_API.Controllers_2
                 created);
         }
 
-        [HttpPut("{id:int:min(1)}")]
-        public async Task<IActionResult> Update(int id, Loan loan)
+        [HttpPost("{id:int:min(1)}/return")]
+        public async Task<IActionResult> ReturnBook(int id)
         {
-            await _loanService.Update(id, loan);
+            await _loanService.ReturnBook(id);
             return NoContent();
         }
 

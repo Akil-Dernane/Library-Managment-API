@@ -37,5 +37,10 @@ namespace Library_API.Mappings
                 Name = dto.Name,
             };
         }
+
+        public static void UpdateEntity(this Author a, UpdateAuthorDto dto)
+        {
+            a.Name = dto.Name;
+        }
     }
 }

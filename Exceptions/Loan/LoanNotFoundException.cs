@@ -1,4 +1,4 @@
-﻿namespace Library_API.Exceptions
+﻿namespace Library_API.Exceptions.Loan
 {
     public class LoanNotFoundException : EntityNotFoundException
     {

@@ -1,4 +1,6 @@
 ﻿using Library_API.Data;
+using Library_API.DTOs.Loan;
+using Library_API.Mappings;
 using Library_API.Models;
 using Library_API.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
@@ -11,6 +13,11 @@ namespace Library_API.Repositories
         public LoanRepository(AppDbContext context)
         {
             _context = context;
+        }
+
+        public async Task SaveChangesAsync()
+        {
+            await _context.SaveChangesAsync();
         }
         public async Task<Loan> Create(Loan loan)
         {
@@ -32,28 +39,24 @@ namespace Library_API.Repositories
             return true;
         }
 
-        public async Task<IEnumerable<Loan>> GetAll()
+        public async Task<IEnumerable<LoanResponseDto>> GetAll()
         {
-            return await _context.Loans.AsNoTracking().ToListAsync();
+            return await _context.Loans.AsNoTracking()
+                .Select(LoanMapping.ToDtoExpression)
+                .ToListAsync();
         }
 
         public async Task<Loan?> GetById(int id)
         {
             return await _context.Loans.FindAsync(id);
         }
-
-        public async Task<bool> Update(int id, Loan updatedLoan)
+        public async Task<Loan?> GetByIdWithRelationships(int id)
         {
-            Loan? loan = await _context.Loans.FindAsync(id);
-            if (loan == null)
-                return false;
-
-            loan.Bookid = updatedLoan.Bookid;
-            loan.Memberid = updatedLoan.Memberid;
-            loan.BorrowedAt = updatedLoan.BorrowedAt;
-            loan.ReturnedAt = updatedLoan.ReturnedAt;
-
-            return true;
+            return await _context.Loans
+                .Include(l => l.Book)
+                .Include(l => l.Member)
+                .AsSplitQuery().FirstOrDefaultAsync(l => l.Id == id);
         }
+
     }
 }

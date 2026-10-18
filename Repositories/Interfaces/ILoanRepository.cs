@@ -1,13 +1,15 @@
-﻿using Library_API.Models;
+﻿using Library_API.DTOs.Loan;
+using Library_API.Models;
 
 namespace Library_API.Repositories.Interfaces
 {
     public interface ILoanRepository
     {
-        Task<IEnumerable<Loan>> GetAll();
+        Task<IEnumerable<LoanResponseDto>> GetAll();
         Task<Loan?> GetById(int id);
+        Task<Loan?> GetByIdWithRelationships(int id);
         Task<Loan> Create(Loan loan);
-        Task<bool> Update(int id, Loan updatedLoan);
+        Task SaveChangesAsync();
         Task<bool> Delete(int id);
     }
 }

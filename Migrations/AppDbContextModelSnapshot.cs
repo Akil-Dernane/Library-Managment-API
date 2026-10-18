@@ -121,7 +121,8 @@ namespace Library_API.Migrations
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("text")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
                         .HasColumnName("name");
 
                     b.HasKey("Id")
@@ -139,17 +140,17 @@ namespace Library_API.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<int>("Bookid")
+                    b.Property<int>("BookId")
                         .HasColumnType("integer")
-                        .HasColumnName("bookid");
+                        .HasColumnName("book_id");
 
                     b.Property<DateTime>("BorrowedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("borrowed_at");
 
-                    b.Property<int>("Memberid")
+                    b.Property<int>("MemberId")
                         .HasColumnType("integer")
-                        .HasColumnName("memberid");
+                        .HasColumnName("member_id");
 
                     b.Property<DateTime?>("ReturnedAt")
                         .HasColumnType("timestamp with time zone")
@@ -158,11 +159,11 @@ namespace Library_API.Migrations
                     b.HasKey("Id")
                         .HasName("pk_loans");
 
-                    b.HasIndex("Bookid")
-                        .HasDatabaseName("ix_loans_bookid");
+                    b.HasIndex("BookId")
+                        .HasDatabaseName("ix_loans_book_id");
 
-                    b.HasIndex("Memberid")
-                        .HasDatabaseName("ix_loans_memberid");
+                    b.HasIndex("MemberId")
+                        .HasDatabaseName("ix_loans_member_id");
 
                     b.ToTable("loans", (string)null);
                 });
@@ -176,8 +177,8 @@ namespace Library_API.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<DateTime>("DateOfBirth")
-                        .HasColumnType("timestamp with time zone")
+                    b.Property<DateOnly>("DateOfBirth")
+                        .HasColumnType("date")
                         .HasColumnName("date_of_birth");
 
                     b.Property<string>("Name")
@@ -230,17 +231,17 @@ namespace Library_API.Migrations
                 {
                     b.HasOne("Library_API.Models.Book", "Book")
                         .WithMany()
-                        .HasForeignKey("Bookid")
+                        .HasForeignKey("BookId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_loans_books_bookid");
+                        .HasConstraintName("fk_loans_books_book_id");
 
                     b.HasOne("Library_API.Models.Member", "Member")
                         .WithMany("Loans")
-                        .HasForeignKey("Memberid")
+                        .HasForeignKey("MemberId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
-                        .HasConstraintName("fk_loans_members_memberid");
+                        .HasConstraintName("fk_loans_members_member_id");
 
                     b.Navigation("Book");
 

@@ -12,6 +12,7 @@ namespace Library_API.Repositories.Interfaces
         Task<AuthorResponseDto?> GetDtoById(int id);
         Task<Author> Create(Author author);
         Task<bool> Update(int id, Author updatedAuthor);
+        Task SaveChangesAsync();
         Task<bool> Delete(int id);
     }
 }

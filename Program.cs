@@ -19,6 +19,8 @@ namespace Library_API
             // Add services to the container.
             //Register API Settings
             builder.Services.Configure<ApiSettings>(builder.Configuration.GetSection("ApiSettings"));
+            builder.Services.Configure<LibrarySettings>(
+                builder.Configuration.GetSection("LibrarySettings"));
 
             //services
             builder.Services.AddScoped< IMemberService, MemberService>();

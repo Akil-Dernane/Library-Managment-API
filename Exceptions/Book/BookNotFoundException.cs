@@ -1,4 +1,4 @@
-﻿namespace Library_API.Exceptions
+﻿namespace Library_API.Exceptions.Book
 {
     public class BookNotFoundException : EntityNotFoundException
     {

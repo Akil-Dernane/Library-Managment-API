@@ -1,13 +1,15 @@
-﻿using Library_API.Models;
+﻿using Library_API.DTOs.Members;
+using Library_API.Models;
 
 namespace Library_API.Services.Interfaces
 {
     public interface IMemberService
     {
-        Task<IEnumerable<Member>> GetAll();
-        Task<Member> GetById(int id);
-        Task<Member> Create(Member member);
-        Task Update(int id, Member member);
+        Task<IEnumerable<MemberResponseDto>> GetAll();
+        Task<MemberResponseDto> GetDtoById(int id);
+        Task<Member?> GetById(int id);
+        Task<MemberResponseDto> Create(CreateMemberDto dto);
+        Task Update(int id, UpdateMemberDto dto);
         Task Delete(int id);
     }
 }

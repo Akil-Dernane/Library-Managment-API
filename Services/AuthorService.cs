@@ -1,5 +1,6 @@
 ﻿using Library_API.DTOs.Author;
 using Library_API.Exceptions;
+using Library_API.Exceptions.Book;
 using Library_API.Mappings;
 using Library_API.Models;
 using Library_API.Repositories.Interfaces;
@@ -20,14 +21,22 @@ namespace Library_API.Services
 
         public async Task<AuthorResponseDto> Create(CreateAuthorDto dto)
         {
-            Author author = dto.ToEntity();
+            var bookIds = dto.BookIds.Distinct().ToList();
 
-            foreach(int BookId in dto.BookIds)
-            {
-                Book book = await _bookRepository.GetById(BookId) ?? throw new BookNotFoundException(BookId);
+            var books = bookIds.Count == 0
+                ? new List<Book>()
+                : await _bookRepository.GetByIds(bookIds);
 
-                author.Books.Add(book);
-            }
+            var foundIds = books.Select(b => b.Id).ToHashSet();
+
+            var missingId = bookIds.FirstOrDefault(id => !foundIds.Contains(id));
+
+            if (bookIds.Any(id => !foundIds.Contains(id)))
+                throw new BookNotFoundException(missingId);
+
+            Author author= dto.ToEntity();
+
+            author.Books.AddRange(books);
 
             return (await _authorRepository.Create(author)).ToDto();
         }
@@ -67,12 +76,55 @@ namespace Library_API.Services
             return author.ToDetailsDto();
         }
 
-        public async Task Update(int id, Author author)
+        public async Task Update(int id, UpdateAuthorDto dto)
         {
-            bool updated = await _authorRepository.Update(id, author);
+            Author author = await _authorRepository.GetByIdWithRelationships(id) ?? throw new AuthorNotFoundException(id);
+            author.UpdateEntity(dto);
 
-            if(!updated)
-                throw new AuthorNotFoundException(id);
+            if (dto.BookIds is not null)
+            {
+                HashSet<int> requestedIds = dto.BookIds.ToHashSet();
+                HashSet<int> existingIds = author.Books
+                    .Select(b => b.Id)
+                    .ToHashSet();
+
+
+                if (!requestedIds.SetEquals(existingIds))
+                {
+                    List<int> idsToAdd = requestedIds
+                        .Except(existingIds)
+                        .ToList();
+
+                    List<int> idsToRemove = existingIds
+                        .Except(requestedIds)
+                        .ToList();
+
+                    // Fetch only books that need to be added
+                    List<Book> booksToAdd = idsToAdd.Count == 0
+                        ? new List<Book>()
+                        : await _bookRepository.GetByIds(idsToAdd);
+
+                    HashSet<int> foundIds = booksToAdd.Select(b => b.Id).ToHashSet();
+
+                    int? missingId = idsToAdd
+                        .Where(bookId => !foundIds.Contains(bookId))
+                        .Select(bookId => (int?)bookId)
+                        .FirstOrDefault();
+
+                    if (missingId.HasValue)
+                        throw new BookNotFoundException(missingId.Value);
+
+                    foreach (Book book in author.Books
+                       .Where(b => idsToRemove.Contains(b.Id))
+                       .ToList())
+                    {
+                        author.Books.Remove(book);
+                    }
+
+                    author.Books.AddRange(booksToAdd);
+                }
+            }
+            await _authorRepository.SaveChangesAsync();
         }
     }
 }

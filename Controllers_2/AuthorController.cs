@@ -37,8 +37,8 @@ namespace Library_API.Controllers_2
         }
 
         [HttpPut("{id:int:min(1)}")]
-        public async Task<IActionResult> Update(int id, Author author) {
-            await _authorService.Update(id, author);
+        public async Task<IActionResult> Update(int id, UpdateAuthorDto dto) {
+            await _authorService.Update(id, dto);
             return NoContent();
         }
 

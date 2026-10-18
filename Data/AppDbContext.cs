@@ -21,7 +21,7 @@ namespace Library_API.Data
             modelBuilder.Entity<Loan>()
                 .HasOne(l => l.Member)
                 .WithMany(m => m.Loans)
-                .HasForeignKey(l => l.Memberid)
+                .HasForeignKey(l => l.MemberId)
                 .OnDelete(DeleteBehavior.Restrict);
 
             // Category <----> Book

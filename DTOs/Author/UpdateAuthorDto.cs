@@ -7,6 +7,6 @@ namespace Library_API.DTOs.Author
         [Required, StringLength(100)]
         public string Name { get; set; } = string.Empty;
 
-        public List<int>? BookIds { get; set; } = new();
+        public List<int>? BookIds { get; set; }
     }
 }

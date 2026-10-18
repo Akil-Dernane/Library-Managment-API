@@ -1,4 +1,5 @@
-﻿using Library_API.Models;
+﻿using Library_API.DTOs.Members;
+using Library_API.Models;
 using Library_API.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
@@ -16,21 +17,21 @@ namespace Library_API.Controllers_2
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Member>>> GetAll()
+        public async Task<ActionResult<IEnumerable<MemberResponseDto>>> GetAll()
         {
             return Ok(await _memberService.GetAll());
         }
 
         [HttpGet("{id:int:min(1)}")]
-        public async Task<ActionResult<Member>> GetById(int id)
+        public async Task<ActionResult<MemberResponseDto>> GetById(int id)
         {
-            return Ok(await _memberService.GetById(id));
+            return Ok(await _memberService.GetDtoById(id));
         }
 
         [HttpPost]
-        public async Task<ActionResult<Member>> Create(Member member)
+        public async Task<ActionResult<MemberResponseDto>> Create(CreateMemberDto dto)
         {
-            Member created = await _memberService.Create(member);
+            MemberResponseDto created = await _memberService.Create(dto);
 
             return CreatedAtAction(
                 nameof(GetById),
@@ -39,9 +40,9 @@ namespace Library_API.Controllers_2
         }
 
         [HttpPut("{id:int:min(1)}")]
-        public async Task<IActionResult> Update(int id, Member member)
+        public async Task<IActionResult> Update(int id, UpdateMemberDto dto)
         {
-            await _memberService.Update(id, member);
+            await _memberService.Update(id, dto);
             return NoContent();
         }
 
