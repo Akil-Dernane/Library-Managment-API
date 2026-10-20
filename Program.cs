@@ -42,7 +42,7 @@ namespace Library_API
                 options.UseNpgsql(builder.Configuration.GetConnectionString("Default"))
                 .UseSnakeCaseNamingConvention());
 
-            //Exception Handler
+            //Global Exception Handler
             builder.Services.AddExceptionHandler<GlobalExceptionsHandler>();
             builder.Services.AddProblemDetails();
 
