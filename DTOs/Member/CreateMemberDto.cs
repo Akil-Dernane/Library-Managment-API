@@ -1,6 +1,5 @@
 ﻿
 using System.ComponentModel.DataAnnotations;
-using Library_API.Models;
 
 namespace Library_API.DTOs.Members;
 

@@ -16,6 +16,9 @@ public class Member
 
     public List<Loan> Loans { get; set; } = new();
 
+    public int UserId { get; set; }
+    public ApplicationUser User { get; set; } = null!;
+
     public void EnsureCanBorrow(int borrowingLimit)
     {
         if (borrowingLimit < 1)

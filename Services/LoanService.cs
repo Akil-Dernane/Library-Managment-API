@@ -73,5 +73,10 @@ namespace Library_API.Services
 
             return loan.ToDto();
         }
+
+        public async Task<IEnumerable<LoanResponseDto>> GetMyLoans(int id)
+        {
+            return await _loanRepository.GetMyLoans(id);
+        }
     }
 }

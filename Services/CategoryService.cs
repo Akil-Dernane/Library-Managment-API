@@ -2,6 +2,7 @@
 using Library_API.DTOs.Category;
 using Library_API.Exceptions;
 using Library_API.Exceptions.Book;
+using Library_API.Exceptions.Category;
 using Library_API.Mappings;
 using Library_API.Models;
 using Library_API.Repositories.Interfaces;

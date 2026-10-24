@@ -7,6 +7,7 @@ namespace Library_API.Repositories.Interfaces
     {
         Task<IEnumerable<MemberResponseDto>> GetAll();
         Task<Member?> GetById(int id);
+        Task<int?> GetMemberIdByUserIdAsync(int userId);
         Task<MemberResponseDto?> GetDtoById(int id);
         Task<Member?> GetByIdWithRelationships(int id);
         Task<Member> Create(Member member);

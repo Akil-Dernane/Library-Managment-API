@@ -1,12 +1,14 @@
 ﻿using Library_API.DTOs.Members;
 using Library_API.Models;
 using Library_API.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Library_API.Controllers_2
 {
 
     [ApiController]
+    [Authorize(Roles = Roles.AdminOrLibrarian)]
     [Route("api/members")]
     public class MemberController : ControllerBase
     {

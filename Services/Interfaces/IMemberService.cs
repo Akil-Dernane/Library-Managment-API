@@ -8,6 +8,8 @@ namespace Library_API.Services.Interfaces
         Task<IEnumerable<MemberResponseDto>> GetAll();
         Task<MemberResponseDto> GetDtoById(int id);
         Task<Member?> GetById(int id);
+
+        Task<int> GetMemberIdByUserIdAsync(int userId);
         Task<MemberResponseDto> Create(CreateMemberDto dto);
         Task Update(int id, UpdateMemberDto dto);
         Task Delete(int id);

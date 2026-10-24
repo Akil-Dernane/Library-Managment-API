@@ -1,5 +1,6 @@
 ﻿using Library_API.DTOs.Author;
 using Library_API.Exceptions;
+using Library_API.Exceptions.Author;
 using Library_API.Exceptions.Book;
 using Library_API.Mappings;
 using Library_API.Models;

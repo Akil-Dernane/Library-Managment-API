@@ -1,12 +1,14 @@
 ﻿using Library_API.DTOs.Author;
 using Library_API.Models;
 using Library_API.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Library_API.Controllers_2
 {
     [ApiController]
     [Route("api/authors")]
+    [Authorize]
     public class AuthorController : ControllerBase
     {
         private readonly IAuthorService _authorService;
@@ -14,22 +16,28 @@ namespace Library_API.Controllers_2
         {
             _authorService = service;
         }
+
+
         [HttpGet]
+        [AllowAnonymous]
         public async Task<ActionResult<IEnumerable<AuthorResponseDto>>> GetAll() {
             return Ok(await _authorService.GetAll());
         }
         [HttpGet("{id:int:min(1)}")]
+        [AllowAnonymous]
         public async Task<ActionResult<AuthorResponseDto>> GetById(int id)
         {
             return Ok(await _authorService.GetDtoById(id));
         }
         [HttpGet("{id:int:min(1)}/details")]
+        [AllowAnonymous]
         public async Task<ActionResult<AuthorDetailsDto>> GetByIdWithRelationships(int id)
         {
             return Ok(await _authorService.GetByIdWithRelationships(id));
         }
 
         [HttpPost]
+        [Authorize(Roles = Roles.AdminOrLibrarian)]
         public async Task<ActionResult<AuthorResponseDto>> Create(CreateAuthorDto dto)
         {
             AuthorResponseDto created = await _authorService.Create(dto);
@@ -37,12 +45,14 @@ namespace Library_API.Controllers_2
         }
 
         [HttpPut("{id:int:min(1)}")]
+        [Authorize(Roles = Roles.AdminOrLibrarian)]
         public async Task<IActionResult> Update(int id, UpdateAuthorDto dto) {
             await _authorService.Update(id, dto);
             return NoContent();
         }
 
         [HttpDelete("{id:int:min(1)}")]
+        [Authorize(Roles = Roles.Admin)]
         public async Task<IActionResult> Delete(int id)
         {
             await _authorService.Delete(id);

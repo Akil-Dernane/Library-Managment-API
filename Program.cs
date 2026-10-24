@@ -5,15 +5,22 @@ using Library_API.Middlewares;
 using Library_API.Models;
 using Library_API.Repositories;
 using Library_API.Repositories.Interfaces;
+using Library_API.Seed;
 using Library_API.Services;
+using Library_API.Services.Admin;
+using Library_API.Services.Admin.Interfaces;
 using Library_API.Services.Interfaces;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 namespace Library_API
 {
     public class Program
     {
-        public static void Main(string[] args)
+        public static async Task Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
 
@@ -23,12 +30,47 @@ namespace Library_API
             builder.Services.Configure<LibrarySettings>(
                 builder.Configuration.GetSection("LibrarySettings"));
 
+            //Jwt
+            builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("Jwt"));
+            builder.Services.AddScoped<ITokenService, TokenService>();
+
+            var jwt = builder.Configuration.GetSection("Jwt").Get<JwtSettings>()!;
+
+            builder.Services
+            .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+            .AddJwtBearer(options =>
+            {
+                options.MapInboundClaims = false;
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuer = true,
+                    ValidIssuer = jwt.Issuer,
+
+                    ValidateAudience = true,
+                    ValidAudience = jwt.Audience,
+
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwt.SigningKey)),
+
+                    ValidateLifetime = true,
+                    ClockSkew = TimeSpan.FromSeconds(30),
+
+                    RoleClaimType = "role"
+                };
+            });
+
+            builder.Services.AddAuthorization();
+
             //services
+            builder.Services.AddScoped< IAuthService, AuthService>();
             builder.Services.AddScoped< IMemberService, MemberService>();
             builder.Services.AddScoped< IAuthorService, AuthorService>();
             builder.Services.AddScoped< IBookService, BookService>();
             builder.Services.AddScoped< ICategoryService, CategoryService>();
             builder.Services.AddScoped< ILoanService, LoanService>();
+
+
+            builder.Services.AddScoped<IAdminUserService, AdminUserService>();
 
             //Repositories
             builder.Services.AddScoped< IMemberRepository, MemberRepository>();
@@ -37,10 +79,33 @@ namespace Library_API
             builder.Services.AddScoped< ICategoryRepository, CategoryRepository>();
             builder.Services.AddScoped< ILoanRepository, LoanRepository>();
 
-            //Database connection
-            builder.Services.AddDbContext<AppDbContext>( options =>
+            //Database Configuration
+            builder.Services.AddDbContext<AppDbContext>(options =>
                 options.UseNpgsql(builder.Configuration.GetConnectionString("Default"))
                 .UseSnakeCaseNamingConvention());
+
+            builder.Services
+            .AddIdentityCore<ApplicationUser>(options =>
+            {
+                // passwords
+                options.Password.RequiredLength = 8;
+                options.Password.RequireDigit = true;
+                options.Password.RequireUppercase = true;
+                options.Password.RequireLowercase = true;
+                options.Password.RequireNonAlphanumeric = false;
+
+                // users
+                options.User.RequireUniqueEmail = true;
+
+                // lockout
+                options.Lockout.AllowedForNewUsers = true;
+                options.Lockout.MaxFailedAccessAttempts = 5;
+                options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
+            })
+            .AddRoles<IdentityRole<int>>()
+            .AddEntityFrameworkStores<AppDbContext>()
+            .AddSignInManager()
+            .AddDefaultTokenProviders();
 
             //Global Exception Handler
             builder.Services.AddExceptionHandler<GlobalExceptionsHandler>();
@@ -51,6 +116,11 @@ namespace Library_API
             builder.Services.AddOpenApi();
 
             var app = builder.Build();
+
+            using (var scope = app.Services.CreateScope())
+            {
+                await IdentitySeeder.SeedAsync(scope.ServiceProvider, app.Configuration);
+            }
 
             // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())
@@ -63,6 +133,7 @@ namespace Library_API
 
             app.UseHttpsRedirection();
 
+            app.UseAuthentication();
             app.UseAuthorization();
 
 

@@ -1,11 +1,13 @@
 ﻿using Library_API.DTOs.Loan;
 using Library_API.Models;
 using Library_API.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Library_API.Controllers_2
 {
     [ApiController]
+    [Authorize(Roles = Roles.AdminOrLibrarian)]
     [Route("api/loans")]
     public class LoanController : ControllerBase
     {

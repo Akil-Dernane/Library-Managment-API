@@ -7,6 +7,7 @@ namespace Library_API.Repositories.Interfaces
     {
         Task<IEnumerable<LoanResponseDto>> GetAll();
         Task<Loan?> GetById(int id);
+        Task<IEnumerable<LoanResponseDto>> GetMyLoans(int memberId);
         Task<Loan?> GetByIdWithRelationships(int id);
         Task<Loan> Create(Loan loan);
         Task SaveChangesAsync();

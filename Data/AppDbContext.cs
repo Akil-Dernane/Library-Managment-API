@@ -1,13 +1,13 @@
 ﻿using Library_API.Models;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
 namespace Library_API.Data
 {
-    public class AppDbContext : DbContext
+    public class AppDbContext : IdentityDbContext<ApplicationUser, IdentityRole<int>, int>
     {
-        public AppDbContext(DbContextOptions<AppDbContext> options) : base (options)
-        {
-        }
+        public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
         public DbSet<Member> Members { get; set; }
         public DbSet<Book> Books { get; set; }
         public DbSet<Author> Authors { get; set; }
@@ -17,6 +17,15 @@ namespace Library_API.Data
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            base.OnModelCreating(modelBuilder);
+
+            //Member ----> ApplicationUser
+            modelBuilder.Entity<Member>()
+                .HasOne(m => m.User)
+                .WithOne()
+                .HasForeignKey<Member>(m => m.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
             // Loan ----> Member
             modelBuilder.Entity<Loan>()
                 .HasOne(l => l.Member)

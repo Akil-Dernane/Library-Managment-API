@@ -1,10 +1,11 @@
 ﻿namespace Library_API.Exceptions
 {
-    public class EntityNotFoundException : Exception
+    public class EntityNotFoundException : ApiException
     {
         protected EntityNotFoundException(string message)
            : base(message)
         {
         }
+        public override int StatusCode => StatusCodes.Status404NotFound;
     }
 }

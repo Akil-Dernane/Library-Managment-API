@@ -50,12 +50,22 @@ namespace Library_API.Repositories
         {
             return await _context.Loans.FindAsync(id);
         }
+
+        public async Task<IEnumerable<LoanResponseDto>> GetMyLoans(int memberId)
+        {
+            return await _context.Loans
+                .AsNoTracking()
+                .Where(l => l.MemberId == memberId)
+                .Select(LoanMapping.ToDtoExpression)
+                .ToListAsync();
+        }
         public async Task<Loan?> GetByIdWithRelationships(int id)
         {
             return await _context.Loans
                 .Include(l => l.Book)
                 .Include(l => l.Member)
-                .AsSplitQuery().FirstOrDefaultAsync(l => l.Id == id);
+                .AsSplitQuery()
+                .FirstOrDefaultAsync(l => l.Id == id);
         }
 
     }

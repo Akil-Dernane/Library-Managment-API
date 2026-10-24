@@ -4,6 +4,7 @@ using Library_API.Mappings;
 using Library_API.Models;
 using Library_API.Repositories.Interfaces;
 using Library_API.Services.Interfaces;
+using Microsoft.EntityFrameworkCore;
 
 namespace Library_API.Services
 {
@@ -46,6 +47,10 @@ namespace Library_API.Services
             return member;
         }
 
+        public async Task<int> GetMemberIdByUserIdAsync(int userId)
+        {
+            return await _memberRepository.GetMemberIdByUserIdAsync(userId) ?? throw new MemberNotFoundException(userId);
+        }
         public async Task Update(int id, UpdateMemberDto dto)
         {
             Member member = await _memberRepository.GetById(id) ?? throw new MemberNotFoundException(id);
