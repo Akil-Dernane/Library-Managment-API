@@ -1,9 +1,16 @@
-﻿namespace Library_API.Exceptions.Auth;
+﻿using Library_API.Exceptions.Interfaces;
 
-public sealed class RegistrationFailedException(IEnumerable<string> errors)
-    : ApiException("User registration failed.")
+namespace Library_API.Exceptions.Auth;
+
+public sealed class RegistrationFailedException : ApiException, IHasErrors
 {
-    public IReadOnlyList<string> Errors { get; } = errors.ToArray();
+    public IReadOnlyList<string> Errors { get; }
 
     public override int StatusCode => StatusCodes.Status400BadRequest;
+
+    public RegistrationFailedException(IEnumerable<string> errors) 
+        : base("User registration failed.")
+    {
+        Errors = errors.ToArray();
+    }
 }

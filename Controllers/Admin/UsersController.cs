@@ -34,11 +34,11 @@ namespace Library_API.Controllers.Admin
             return NoContent();
         }
 
-        //[HttpDelete("{userId:int:min(1)}/roles/{role}")]
-        //public async Task<IActionResult> RemoveRole(int userId, string role)
-        //{
-        //    await _service.RemoveFromRole(userId, role);
-        //    return NoContent();
-        //}
+        [HttpDelete("{userId:int:min(1)}/roles/{role}")]
+        public async Task<IActionResult> RemoveRole(int userId, string role)
+        {
+            await _usersService.RemoveFromRole(userId, role);
+            return NoContent();
+        }
     }
 }

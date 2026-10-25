@@ -1,4 +1,5 @@
 ﻿using Library_API.Exceptions.Auth;
+using Library_API.Exceptions.Role;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 
@@ -58,6 +59,11 @@ public class GlobalExceptionsHandler : IExceptionHandler
         if (exception is RegistrationFailedException registrationException)
         {
             problem.Extensions["errors"] = registrationException.Errors;
+        }
+
+        if (exception is RoleRemovalFailedException roleException)
+        {
+            problem.Extensions["errors"] = roleException.Errors;
         }
 
         httpContext.Response.StatusCode = statusCode;

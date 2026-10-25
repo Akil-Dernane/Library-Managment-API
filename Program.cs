@@ -62,7 +62,11 @@ namespace Library_API
             builder.Services.AddAuthorization();
 
             //services
+            builder.Services.AddHttpContextAccessor();
+            builder.Services.AddScoped< ICurrentUserService, CurrentUserService>();
             builder.Services.AddScoped< IAuthService, AuthService>();
+
+
             builder.Services.AddScoped< IMemberService, MemberService>();
             builder.Services.AddScoped< IAuthorService, AuthorService>();
             builder.Services.AddScoped< IBookService, BookService>();

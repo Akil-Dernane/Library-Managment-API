@@ -8,6 +8,7 @@ using Library_API.Exceptions.User;
 using Library_API.Mappings;
 using Library_API.Models;
 using Library_API.Services.Admin.Interfaces;
+using Library_API.Services.Interfaces;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -15,35 +16,64 @@ namespace Library_API.Services.Admin
 {
     public class AdminUserService : IAdminUserService
     {
+        private readonly ICurrentUserService _currentUser;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly RoleManager<IdentityRole<int>> _roleManager;
         private readonly AppDbContext _context;
 
+
+        private readonly ILogger<AdminUserService> _logger;
+
         public AdminUserService(
+             ICurrentUserService currentUser,
             UserManager<ApplicationUser> userManager,
             RoleManager<IdentityRole<int>> roleManager,
-            AppDbContext context)
+            AppDbContext context,
+            ILogger<AdminUserService> logger)
         {
+            _currentUser = currentUser;
             _userManager = userManager;
             _roleManager = roleManager;
             _context = context;
+            _logger = logger;
         }
+
 
         public async Task AddToRole(int userId, string role)
         {
-            ApplicationUser user = await _userManager.FindByIdAsync(userId.ToString()) ?? throw new UserNotFoundException(userId);
+            var actorId = _currentUser.UserId;
 
-            if(!await _roleManager.RoleExistsAsync(role))
+            _logger.LogInformation(
+                "User {ActorId} requested to add role {Role} to user {TargetUserId}",
+                actorId, role, userId);
+
+            ApplicationUser user =
+                await _userManager.FindByIdAsync(userId.ToString())
+                ?? throw new UserNotFoundException(userId);
+
+            if (!await _roleManager.RoleExistsAsync(role))
                 throw new RoleNotFoundException(role);
 
             if (await _userManager.IsInRoleAsync(user, role))
-                return;
+            {
+                _logger.LogInformation(
+                    "User {TargetUserId} already has role {Role}. No change made by {ActorId}",
+                    userId, role, actorId);
 
-            IdentityResult result = await _userManager.AddToRoleAsync(user, role);
+                return;
+            }
+
+            IdentityResult result =
+                await _userManager.AddToRoleAsync(user, role);
 
             if (!result.Succeeded)
             {
                 var errors = result.Errors.ToList();
+
+                _logger.LogWarning(
+                    "Failed to add role {Role} to user {TargetUserId} by {ActorId}. Error codes: {ErrorCodes}",
+                    userId, role, actorId,
+                    string.Join(", ", errors.Select(e => e.Code)));
 
                 if (errors.Any(e =>
                     e.Code is "DuplicateUserName" or "DuplicateEmail"))
@@ -55,7 +85,12 @@ namespace Library_API.Services.Admin
                 throw new RegistrationFailedException(
                     errors.Select(e => e.Description));
             }
+
+            _logger.LogInformation(
+                "User {ActorId} successfully added role {Role} to user {TargetUserId}",
+                actorId, role, userId);
         }
+
 
         public async Task<IEnumerable<UserResponseDto>> GetAll(int page, int pageSize)
         {
@@ -125,9 +160,46 @@ namespace Library_API.Services.Admin
             return users;
         }
 
-        public Task RemoveFromRole(int userId, string role)
+
+        public async Task RemoveFromRole(int userId, string role)
         {
-            throw new NotImplementedException();
+            ApplicationUser user = await _userManager.FindByIdAsync(userId.ToString())
+                ?? throw new UserNotFoundException(userId);
+
+            if (!await _roleManager.RoleExistsAsync(role))
+                throw new RoleNotFoundException(role);
+
+            _logger.LogInformation(
+                "User {ActorId} requested to remove role {Role} from user {UserId}",
+                _currentUser.UserId, role, userId);
+
+            if (string.Equals(role, Roles.Admin, StringComparison.OrdinalIgnoreCase))
+            {
+                var admins = await _userManager.GetUsersInRoleAsync(Roles.Admin);
+
+                if (admins.Count == 1 && admins[0].Id == user.Id)
+                    throw new LastAdminException();
+            }
+
+            IdentityResult result = await _userManager.RemoveFromRoleAsync(user, role);
+
+            if (!result.Succeeded)
+            {
+                _logger.LogWarning(
+                    "Failed to remove role {Role} from user {UserId} by actor {ActorId}. Errors: {Errors}",
+                    role,
+                    userId,
+                    _currentUser.UserId,
+                    string.Join("; ", result.Errors.Select(e => e.Code)));
+
+                throw new RoleRemovalFailedException(
+                    result.Errors.Select(e => e.Description));
+            }
+
+            _logger.LogInformation(
+                "User {ActorId} successfully removed role {Role} from user {UserId}",
+                _currentUser.UserId, role, userId);
         }
+
     }
 }
