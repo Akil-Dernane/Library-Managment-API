@@ -2,10 +2,8 @@
 using Library_API.DTOs.ApplicationUser;
 using Library_API.Exceptions;
 using Library_API.Exceptions.Auth;
-using Library_API.Exceptions.Member;
 using Library_API.Exceptions.Role;
 using Library_API.Exceptions.User;
-using Library_API.Mappings;
 using Library_API.Models;
 using Library_API.Services.Admin.Interfaces;
 using Library_API.Services.Interfaces;
@@ -37,7 +35,6 @@ namespace Library_API.Services.Admin
             _context = context;
             _logger = logger;
         }
-
 
         public async Task AddToRole(int userId, string role)
         {

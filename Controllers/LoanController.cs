@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Library_API.Controllers_2
 {
     [ApiController]
-    [Authorize(Roles = Roles.AdminOrLibrarian)]
+    [Authorize(Policy = Policies.StaffOnly)]
     [Route("api/loans")]
     public class LoanController : ControllerBase
     {

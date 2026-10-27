@@ -11,6 +11,7 @@ using Library_API.Services.Admin;
 using Library_API.Services.Admin.Interfaces;
 using Library_API.Services.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -66,6 +67,9 @@ namespace Library_API
             builder.Services.AddScoped< ICurrentUserService, CurrentUserService>();
             builder.Services.AddScoped< IAuthService, AuthService>();
 
+            builder.Services.AddScoped< IAdminUserService, AdminUserService>();
+            builder.Services.AddScoped< IAdminRolesService, AdminRolesService >();
+
 
             builder.Services.AddScoped< IMemberService, MemberService>();
             builder.Services.AddScoped< IAuthorService, AuthorService>();
@@ -74,7 +78,6 @@ namespace Library_API
             builder.Services.AddScoped< ILoanService, LoanService>();
 
 
-            builder.Services.AddScoped<IAdminUserService, AdminUserService>();
 
             //Repositories
             builder.Services.AddScoped< IMemberRepository, MemberRepository>();
@@ -110,6 +113,23 @@ namespace Library_API
             .AddEntityFrameworkStores<AppDbContext>()
             .AddSignInManager()
             .AddDefaultTokenProviders();
+
+
+            // Policies
+            var authorizationBuilder = builder.Services.AddAuthorizationBuilder()
+                .AddPolicy(Policies.StaffOnly, policy =>
+                    policy.RequireAuthenticatedUser()
+                          .RequireRole(Roles.Admin, Roles.Librarian))
+                .SetFallbackPolicy(
+                    new AuthorizationPolicyBuilder()
+                        .RequireAuthenticatedUser()
+                        .Build());
+
+            foreach (var permission in AppPermissions.All)
+            {
+                authorizationBuilder.AddPolicy(permission, policy =>
+                    policy.RequireClaim(AppClaims.Permission, permission));
+            }
 
             //Global Exception Handler
             builder.Services.AddExceptionHandler<GlobalExceptionsHandler>();

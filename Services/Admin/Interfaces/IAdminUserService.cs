@@ -1,5 +1,4 @@
 ﻿using Library_API.DTOs.ApplicationUser;
-using Library_API.Models;
 
 namespace Library_API.Services.Admin.Interfaces
 {

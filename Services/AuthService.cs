@@ -9,6 +9,7 @@ using Library_API.Services.Interfaces;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using System.Security.Claims;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Library_API.Services;
@@ -16,6 +17,7 @@ namespace Library_API.Services;
 public class AuthService : IAuthService
 {
     private readonly UserManager<ApplicationUser> _userManager;
+    private readonly RoleManager<IdentityRole<int>> _roleManager;
     private readonly SignInManager<ApplicationUser> _signInManager;
 
     private readonly ITokenService _tokens;
@@ -26,7 +28,8 @@ public class AuthService : IAuthService
     private readonly AppDbContext _context;
 
     public AuthService(
-        UserManager<ApplicationUser> userManager, 
+        UserManager<ApplicationUser> userManager,
+        RoleManager<IdentityRole<int>> roleManager,
         SignInManager<ApplicationUser> signInManager, 
         ITokenService tokens, 
         IOptions<JwtSettings> jwt,
@@ -35,6 +38,7 @@ public class AuthService : IAuthService
         )
     {
         _userManager = userManager;
+        _roleManager = roleManager;
         _signInManager = signInManager;
         _tokens = tokens;
         _jwt = jwt.Value;
@@ -133,8 +137,19 @@ public class AuthService : IAuthService
         if (!result.Succeeded)
             throw new InvalidCredentialsException();
 
+        var claims = new List<Claim>(await _userManager.GetClaimsAsync(user));
+
+        foreach (string roleName in await _userManager.GetRolesAsync(user))
+        {
+            claims.Add(new Claim("role", roleName));
+
+            var role = await _roleManager.FindByNameAsync(roleName);
+            if (role is not null)
+                claims.AddRange(await _roleManager.GetClaimsAsync(role));
+        }
+
         IList<string> roles = await _userManager.GetRolesAsync(user);
-        string token = _tokens.CreateAccessToken(user.Id, user.Email!, roles);
+        string token = _tokens.CreateAccessToken(user.Id, user.Email!, claims.DistinctBy(c => (c.Type, c.Value)));
 
         return new AuthResponseDto(token, DateTime.UtcNow.AddMinutes(_jwt.AccessTokenMinutes));
     }
