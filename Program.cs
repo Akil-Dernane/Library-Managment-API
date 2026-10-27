@@ -10,6 +10,8 @@ using Library_API.Services;
 using Library_API.Services.Admin;
 using Library_API.Services.Admin.Interfaces;
 using Library_API.Services.Interfaces;
+using Library_API.Services.Validation;
+using Library_API.Services.Validation.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -66,6 +68,8 @@ namespace Library_API
             builder.Services.AddHttpContextAccessor();
             builder.Services.AddScoped< ICurrentUserService, CurrentUserService>();
             builder.Services.AddScoped< IAuthService, AuthService>();
+
+            builder.Services.AddScoped< IClaimValidationService, ClaimValidationService>();
 
             builder.Services.AddScoped< IAdminUserService, AdminUserService>();
             builder.Services.AddScoped< IAdminRolesService, AdminRolesService >();

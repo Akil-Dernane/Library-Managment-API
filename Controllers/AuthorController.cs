@@ -37,7 +37,7 @@ namespace Library_API.Controllers_2
         }
 
         [HttpPost]
-        [Authorize(Roles = Roles.AdminOrLibrarian)]
+        [Authorize(Policy= AppPermissions.AuthorsCreate)]
         public async Task<ActionResult<AuthorResponseDto>> Create(CreateAuthorDto dto)
         {
             AuthorResponseDto created = await _authorService.Create(dto);
@@ -45,14 +45,14 @@ namespace Library_API.Controllers_2
         }
 
         [HttpPut("{id:int:min(1)}")]
-        [Authorize(Roles = Roles.AdminOrLibrarian)]
+        [Authorize(Policy = AppPermissions.AuthorsUpdate)]
         public async Task<IActionResult> Update(int id, UpdateAuthorDto dto) {
             await _authorService.Update(id, dto);
             return NoContent();
         }
 
         [HttpDelete("{id:int:min(1)}")]
-        [Authorize(Roles = Roles.Admin)]
+        [Authorize(Policy = AppPermissions.AuthorsDelete)]
         public async Task<IActionResult> Delete(int id)
         {
             await _authorService.Delete(id);

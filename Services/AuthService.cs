@@ -7,10 +7,8 @@ using Library_API.Models;
 using Library_API.Repositories.Interfaces;
 using Library_API.Services.Interfaces;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using System.Security.Claims;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Library_API.Services;
 
@@ -138,6 +136,10 @@ public class AuthService : IAuthService
             throw new InvalidCredentialsException();
 
         var claims = new List<Claim>(await _userManager.GetClaimsAsync(user));
+
+        int memberId = await _memberRepository.GetMemberIdByUserIdAsync(user.Id);
+
+        claims.Add(new Claim( AppClaims.MemberId, memberId.ToString()));
 
         foreach (string roleName in await _userManager.GetRolesAsync(user))
         {

@@ -49,7 +49,7 @@ namespace Library_API.Services
 
         public async Task<int> GetMemberIdByUserIdAsync(int userId)
         {
-            return await _memberRepository.GetMemberIdByUserIdAsync(userId) ?? throw new MemberNotFoundException(userId);
+            return await _memberRepository.GetMemberIdByUserIdAsync(userId);
         }
         public async Task Update(int id, UpdateMemberDto dto)
         {

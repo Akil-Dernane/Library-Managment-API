@@ -51,11 +51,11 @@ namespace Library_API.Repositories
             return await _context.Members.FindAsync(id);
         }
 
-        public async Task<int?> GetMemberIdByUserIdAsync(int userId)
+        public async Task<int> GetMemberIdByUserIdAsync(int userId)
         {
             return await _context.Members
             .Where(m => m.UserId == userId)
-            .Select(m => (int?)m.Id)
+            .Select(m => m.Id)
             .SingleOrDefaultAsync();
         }
         public async Task<MemberResponseDto?> GetDtoById(int id)

@@ -8,14 +8,15 @@
         public static readonly IReadOnlySet<string> RoleClaimTypes =
               new HashSet<string>(StringComparer.Ordinal)
               {
+                  //Add a validation to the ClaimValidationService each time you include a new claim.
                     Permission
               };
 
         public static readonly IReadOnlySet<string> UserClaimTypes =
             new HashSet<string>(StringComparer.Ordinal)
             {
+                  //Add a validation to the ClaimValidationService each time you include a new claim.
                 Permission,
-                MemberId
             };
     }
 }

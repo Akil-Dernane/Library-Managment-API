@@ -1,10 +1,10 @@
 ﻿
 using Library_API.Exceptions.Claim;
-using Library_API.Exceptions.Permission;
 using Library_API.Exceptions.Role;
 using Library_API.Models;
 using Library_API.Services.Admin.Interfaces;
 using Library_API.Services.Interfaces;
+using Library_API.Services.Validation.Interfaces;
 using Microsoft.AspNetCore.Identity;
 using System.Security.Claims;
 
@@ -16,14 +16,18 @@ public class AdminRolesService : IAdminRolesService
     private readonly ICurrentUserService _currentUser;
     private readonly ILogger<AdminRolesService> _logger;
 
+    private readonly IClaimValidationService _claimValidation;
+
     public AdminRolesService(
         RoleManager<IdentityRole<int>> roleManager,
         ICurrentUserService currentUser,
-        ILogger<AdminRolesService> logger)
+        ILogger<AdminRolesService> logger,
+        IClaimValidationService claimValidation)
     {
         _roleManager = roleManager;
         _currentUser = currentUser;
         _logger = logger;
+        _claimValidation = claimValidation;
     }
 
     public async Task AddClaimToRole(string roleName, ClaimRequest dto)
@@ -32,7 +36,7 @@ public class AdminRolesService : IAdminRolesService
             "User {ActorId} requested to add claim {ClaimType} - {ClaimValue} to role {RoleName}",
             _currentUser.UserId, dto.Type, dto.Value, roleName);
 
-        ValidateRoleClaim(dto);
+        _claimValidation.Validate(dto, AppClaims.RoleClaimTypes);
 
         var role = await FindRoleAsync(roleName);
 
@@ -83,7 +87,7 @@ public class AdminRolesService : IAdminRolesService
             "User {ActorId} requested to remove claim {ClaimType} - {ClaimValue} from role {RoleName}",
             _currentUser.UserId, dto.Type, dto.Value, roleName);
 
-        ValidateRoleClaim(dto);
+        _claimValidation.Validate(dto, AppClaims.RoleClaimTypes);
 
         var role = await FindRoleAsync(roleName);
 
@@ -134,34 +138,5 @@ public class AdminRolesService : IAdminRolesService
         }
 
         return role;
-    }
-
-    private void ValidateRoleClaim(ClaimRequest dto)
-    {
-        if (!AppClaims.RoleClaimTypes.Contains(dto.Type))
-        {
-            _logger.LogWarning(
-                "User {ActorId} attempted to use invalid claim type {ClaimType}",
-                _currentUser.UserId,
-                dto.Type);
-
-            throw new InvalidClaimException(dto.Type);
-        }
-
-        switch (dto.Type)
-        {
-            case AppClaims.Permission:
-                if (!AppPermissions.All.Contains(dto.Value))
-                {
-                    _logger.LogWarning(
-                        "User {ActorId} attempted to use invalid permission {Permission}",
-                        _currentUser.UserId,
-                        dto.Value);
-
-                    throw new InvalidPermissionException(dto.Value);
-                }
-
-                break;
-        }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using Library_API.DTOs.Loan;
 using Library_API.Exceptions.Member;
+using Library_API.Models;
 using Library_API.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -36,24 +37,8 @@ namespace Library_API.Controllers
         [HttpGet("loans")]
         public async Task<ActionResult<IEnumerable<LoanResponseDto>>> GetMyLoans()
         {
-
-            if (!int.TryParse(
-                User.FindFirstValue(JwtRegisteredClaimNames.Sub), 
-                out var applicationUserId)
-                )
-            {
-                return Unauthorized();
-            }
-
-            try
-            {
-                var memberId = await _memberService
-                    .GetMemberIdByUserIdAsync(applicationUserId);
-                return Ok(await _loanService.GetMyLoans(memberId));
-            }
-            catch (MemberNotFoundException) {
-                return Ok(new List<LoanResponseDto>());
-            }
+            var memberId = int.Parse(User.FindFirstValue(AppClaims.MemberId));
+            return Ok(await _loanService.GetMyLoans(memberId));
         }
     }
 }

@@ -40,14 +40,15 @@ namespace Library_API.Controllers_2
         }
 
         [HttpGet("{id:int:min(1)}/details")]
-        [Authorize(Roles = Roles.AdminOrLibrarian)]
+        [AllowAnonymous]
         public async Task<ActionResult<BookDetailsDto>> GetBookDetails(int id)
         {
             return Ok(await _bookService.GetByIdWithRelationships(id));
         }
 
         [HttpPost]
-        [Authorize(Roles = Roles.AdminOrLibrarian)]
+        [Authorize(Roles = Policies.StaffOnly)]
+        [Authorize(Policy = AppPermissions.BooksCreate)]
         public async Task<ActionResult<BookResponseDto>> Create(CreateBookDto dto)
         {
             BookResponseDto created = await _bookService.Create(dto);
@@ -55,7 +56,8 @@ namespace Library_API.Controllers_2
         }
 
         [HttpPut("{id:int:min(1)}")]
-        [Authorize(Roles = Roles.AdminOrLibrarian)]
+        [Authorize(Roles = Policies.StaffOnly)]
+        [Authorize(Policy = AppPermissions.BooksUpdate)]
         public async Task<IActionResult> Update(int id, UpdateBookDto dto)
         {
             await _bookService.Update(id, dto);
@@ -63,7 +65,8 @@ namespace Library_API.Controllers_2
         }
 
         [HttpDelete("{id:int:min(1)}")]
-        [Authorize(Roles = Roles.Admin)]
+        [Authorize(Roles = Policies.StaffOnly)]
+        [Authorize(Policy = AppPermissions.BooksDelete)]
         public async Task<ActionResult> Delete(int id) {
             await _bookService.Delete(id);
             return NoContent();

@@ -3,6 +3,7 @@ using Library_API.Models;
 using Library_API.Services.Admin.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace Library_API.Controllers.Admin
 {
@@ -18,7 +19,6 @@ namespace Library_API.Controllers.Admin
             _usersService = usersService;
         }
 
-
         [HttpGet]
         public async Task<ActionResult<IEnumerable<UserResponseDto>>> GetAll(int page = 1,int? pageSize = null)
         {
@@ -26,7 +26,7 @@ namespace Library_API.Controllers.Admin
             return Ok(await _usersService.GetAll(page, size));
         }
 
-
+        #region Manage User Roles
         [HttpPost("{userId:int:min(1)}/roles")]
         public async Task<IActionResult> AddRole(int userId, AssignRoleDto dto)
         {
@@ -40,5 +40,29 @@ namespace Library_API.Controllers.Admin
             await _usersService.RemoveFromRole(userId, role);
             return NoContent();
         }
+        #endregion
+
+        #region Manage User Claims
+        [HttpGet("{userId:int:min(1)}/claims")]
+        public async Task<ActionResult<IEnumerable<Claim>>> GetAllUserClaims(int userId)
+        {
+            return Ok(await _usersService.GetAllUserClaims(userId));
+        }
+
+        [HttpPost("{userId:int:min(1)}/claims")]
+        public async Task<IActionResult> AddClaimToUser(int userId, ClaimRequest dto)
+        {
+            await _usersService.AddClaimToUser(userId, dto);
+            return NoContent();
+        }
+
+        [HttpDelete("{userId:int:min(1)}/claims")]
+        public async Task<IActionResult> RemoveClaimFromUser(int userId, ClaimRequest dto)
+        {
+            await _usersService.RemoveClaimFromUser(userId, dto);
+            return NoContent();
+        }
+
+        #endregion
     }
 }

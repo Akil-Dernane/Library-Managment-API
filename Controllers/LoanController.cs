@@ -18,18 +18,21 @@ namespace Library_API.Controllers_2
         }
 
         [HttpGet]
+        [Authorize(Policy = AppPermissions.LoansRead)]
         public async Task<ActionResult<IEnumerable<LoanResponseDto>>> GetAll()
         {
             return Ok(await _loanService.GetAll());
         }
 
         [HttpGet("{id:int:min(1)}")]
+        [Authorize(Policy = AppPermissions.LoansRead)]
         public async Task<ActionResult<LoanResponseDto>> GetById(int id)
         {
             return Ok(await _loanService.GetById(id));
         }
 
         [HttpPost]
+        [Authorize(Policy = AppPermissions.LoansCreate)]
         public async Task<ActionResult<LoanResponseDto>> Create(CreateLoanDto dto)
         {
             LoanResponseDto created = await _loanService.Create(dto);
@@ -41,6 +44,7 @@ namespace Library_API.Controllers_2
         }
 
         [HttpPost("{id:int:min(1)}/return")]
+        [Authorize(Policy = AppPermissions.LoansReturn)]
         public async Task<IActionResult> ReturnBook(int id)
         {
             await _loanService.ReturnBook(id);
@@ -48,6 +52,7 @@ namespace Library_API.Controllers_2
         }
 
         [HttpDelete("{id:int:min(1)}")]
+        [Authorize(Policy = AppPermissions.LoansDelete)]
         public async Task<IActionResult> Delete(int id)
         {
             await _loanService.Delete(id);
