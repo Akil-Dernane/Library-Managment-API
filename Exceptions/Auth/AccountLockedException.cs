@@ -1,7 +1,8 @@
 ﻿namespace Library_API.Exceptions.Auth
 {
-    public class AccountLockedException : Exception
+    public class AccountLockedException : ApiException
     {
+        public override int StatusCode =>   StatusCodes.Status423Locked;
         public DateTimeOffset? LockoutEnd { get; }
 
         public AccountLockedException(DateTimeOffset? lockoutEnd = null)

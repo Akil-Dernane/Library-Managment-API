@@ -37,9 +37,9 @@ public class ClaimValidationService : IClaimValidationService
         bool isValid = dto.Type switch
         {
             AppClaims.Permission =>
-                AppPermissions.All.Contains(dto.Value),
+                AppPermissions.All.Contains(dto.Value, StringComparer.Ordinal),
 
-            _ => false
+        _ => false
         };
 
         if (!isValid)

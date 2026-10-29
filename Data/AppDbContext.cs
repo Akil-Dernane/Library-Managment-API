@@ -13,6 +13,7 @@ namespace Library_API.Data
         public DbSet<Author> Authors { get; set; }
         public DbSet<Category> Categories { get; set; }
         public DbSet<Loan> Loans { get; set; }
+        public DbSet<RefreshToken> RefreshTokens { get; set; }
 
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -42,6 +43,17 @@ namespace Library_API.Data
             modelBuilder.Entity<Book>()
                 .HasMany(b => b.Authors)
                 .WithMany(a => a.Books);
+
+            //RefreshToken <-------- User
+            modelBuilder.Entity<RefreshToken>(e => 
+            {
+                e.HasIndex(t => t.TokenHash).IsUnique();
+                e.HasIndex(t => t.FamilyId);
+                e.HasOne(t => t.User)
+                .WithMany()
+                .HasForeignKey(t => t.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+            });
         }
 
     }

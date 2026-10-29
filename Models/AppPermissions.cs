@@ -1,58 +1,56 @@
-﻿namespace Library_API.Models
+﻿using System.Reflection;
+
+namespace Library_API.Models
 {
     public static class AppPermissions
     {
-        // Books
-        public const string BooksCreate = "books.create";
-        public const string BooksUpdate = "books.update";
-        public const string BooksDelete = "books.delete";
+        public static class Books
+        { 
+            public const string Create = "books.create";
+            public const string Update = "books.update";
+            public const string Delete = "books.delete";
+        }
+        public static class Authors
+        {
+            public const string Create = "authors.create";
+            public const string Update = "authors.update";
+            public const string Delete = "authors.delete";
+        }
 
-        // Authors
-        public const string AuthorsCreate = "authors.create";
-        public const string AuthorsUpdate = "authors.update";
-        public const string AuthorsDelete = "authors.delete";
+        public static class Categories
+        {
+            public const string Create = "categories.create";
+            public const string Update = "categories.update";
+            public const string Delete = "categories.delete";
+        }
 
-        // Categories
-        public const string CategoriesCreate = "categories.create";
-        public const string CategoriesUpdate = "categories.update";
-        public const string CategoriesDelete = "categories.delete";
+        public static class Loans
+        {
+            public const string Lend = "loans.lend";
+            public const string Return = "loans.return";
+            public const string ReadOwn = "loans.read.own";
+            public const string ReadAll = "loans.read.all";
+            public const string Delete = "loans.delete";
+        }
 
-        // Loans
-        public const string LoansRead = "loans.read";
-        public const string LoansCreate = "loans.create";
-        public const string LoansReturn = "loans.return";
-        public const string LoansDelete = "loans.delete";
+        public static class Members
+        {
+            public const string ReadAll = "members.read.all";
+            public const string ReadOwn = "members.read.own";
+            public const string Update = "members.update";
+            public const string Delete = "members.delete";
+        }
 
-        // Members
-        public const string MembersRead = "members.read";
-        public const string MembersCreate = "members.create";
-        public const string MembersUpdate = "members.update";
-        public const string MembersDelete = "members.delete";
+        public static class Users
+        {
+            public const string Manage = "users.manage";
+        }
 
-        public static readonly IReadOnlySet<string> All =
-            new HashSet<string>(StringComparer.Ordinal)
-            {
-                BooksCreate,
-                BooksUpdate,
-                BooksDelete,
-
-                AuthorsCreate,
-                AuthorsUpdate,
-                AuthorsDelete,
-
-                CategoriesCreate,
-                CategoriesUpdate,
-                CategoriesDelete,
-
-                LoansRead,
-                LoansCreate,
-                LoansReturn,
-                LoansDelete,
-
-                MembersRead,
-                MembersCreate,
-                MembersUpdate,
-                MembersDelete
-            };
+        public static IReadOnlyList<string> All { get; } = typeof(AppPermissions)
+        .GetNestedTypes()
+        .SelectMany(t => t.GetFields(BindingFlags.Public | BindingFlags.Static))
+        .Where(f => f.IsLiteral)
+        .Select(f => (string)f.GetRawConstantValue()!)
+        .ToList();
     }
 }

@@ -45,7 +45,8 @@ namespace Library_API.Mappings
         {
             b.Name = dto.Name;
             b.Pages = dto.Pages;
-            b.IsAvailable = dto.IsAvailable;
+            if (dto.IsAvailable is bool isAvailable)
+                b.IsAvailable = isAvailable;
         } 
     }
 }

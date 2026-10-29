@@ -1,4 +1,5 @@
-﻿using Library_API.DTOs.Loan;
+﻿using Library_API.Authorization;
+using Library_API.DTOs.Loan;
 using Library_API.Models;
 using Library_API.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -7,7 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Library_API.Controllers_2
 {
     [ApiController]
-    [Authorize(Policy = Policies.StaffOnly)]
+    [HasPermission(Policies.StaffOnly)]
     [Route("api/loans")]
     public class LoanController : ControllerBase
     {
@@ -18,21 +19,21 @@ namespace Library_API.Controllers_2
         }
 
         [HttpGet]
-        [Authorize(Policy = AppPermissions.LoansRead)]
+        [HasPermission(AppPermissions.Loans.ReadAll)]
         public async Task<ActionResult<IEnumerable<LoanResponseDto>>> GetAll()
         {
             return Ok(await _loanService.GetAll());
         }
 
         [HttpGet("{id:int:min(1)}")]
-        [Authorize(Policy = AppPermissions.LoansRead)]
+        [HasPermission(AppPermissions.Loans.ReadAll)]
         public async Task<ActionResult<LoanResponseDto>> GetById(int id)
         {
             return Ok(await _loanService.GetById(id));
         }
 
         [HttpPost]
-        [Authorize(Policy = AppPermissions.LoansCreate)]
+        [HasPermission(AppPermissions.Loans.Lend)]
         public async Task<ActionResult<LoanResponseDto>> Create(CreateLoanDto dto)
         {
             LoanResponseDto created = await _loanService.Create(dto);
@@ -44,7 +45,7 @@ namespace Library_API.Controllers_2
         }
 
         [HttpPost("{id:int:min(1)}/return")]
-        [Authorize(Policy = AppPermissions.LoansReturn)]
+        [HasPermission(AppPermissions.Loans.Return)]
         public async Task<IActionResult> ReturnBook(int id)
         {
             await _loanService.ReturnBook(id);
@@ -52,7 +53,7 @@ namespace Library_API.Controllers_2
         }
 
         [HttpDelete("{id:int:min(1)}")]
-        [Authorize(Policy = AppPermissions.LoansDelete)]
+        [HasPermission(AppPermissions.Loans.Delete)]
         public async Task<IActionResult> Delete(int id)
         {
             await _loanService.Delete(id);

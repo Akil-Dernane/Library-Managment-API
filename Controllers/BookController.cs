@@ -1,4 +1,5 @@
-﻿using Library_API.DTOs.Book;
+﻿using Library_API.Authorization;
+using Library_API.DTOs.Book;
 using Library_API.Models;
 using Library_API.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -47,8 +48,7 @@ namespace Library_API.Controllers_2
         }
 
         [HttpPost]
-        [Authorize(Roles = Policies.StaffOnly)]
-        [Authorize(Policy = AppPermissions.BooksCreate)]
+        [HasPermission(AppPermissions.Books.Create)]
         public async Task<ActionResult<BookResponseDto>> Create(CreateBookDto dto)
         {
             BookResponseDto created = await _bookService.Create(dto);
@@ -56,8 +56,7 @@ namespace Library_API.Controllers_2
         }
 
         [HttpPut("{id:int:min(1)}")]
-        [Authorize(Roles = Policies.StaffOnly)]
-        [Authorize(Policy = AppPermissions.BooksUpdate)]
+        [HasPermission(AppPermissions.Books.Update)]
         public async Task<IActionResult> Update(int id, UpdateBookDto dto)
         {
             await _bookService.Update(id, dto);
@@ -65,8 +64,7 @@ namespace Library_API.Controllers_2
         }
 
         [HttpDelete("{id:int:min(1)}")]
-        [Authorize(Roles = Policies.StaffOnly)]
-        [Authorize(Policy = AppPermissions.BooksDelete)]
+        [HasPermission(AppPermissions.Books.Delete)]
         public async Task<ActionResult> Delete(int id) {
             await _bookService.Delete(id);
             return NoContent();

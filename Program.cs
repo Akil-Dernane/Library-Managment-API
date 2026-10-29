@@ -1,4 +1,5 @@
 
+using Library_API.Authorization;
 using Library_API.Data;
 using Library_API.Exceptions;
 using Library_API.Middlewares;
@@ -9,6 +10,7 @@ using Library_API.Seed;
 using Library_API.Services;
 using Library_API.Services.Admin;
 using Library_API.Services.Admin.Interfaces;
+using Library_API.Services.Background;
 using Library_API.Services.Interfaces;
 using Library_API.Services.Validation;
 using Library_API.Services.Validation.Interfaces;
@@ -18,6 +20,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using System.Threading.RateLimiting;
 
 namespace Library_API
 {
@@ -74,14 +77,14 @@ namespace Library_API
             builder.Services.AddScoped< IAdminUserService, AdminUserService>();
             builder.Services.AddScoped< IAdminRolesService, AdminRolesService >();
 
-
             builder.Services.AddScoped< IMemberService, MemberService>();
             builder.Services.AddScoped< IAuthorService, AuthorService>();
             builder.Services.AddScoped< IBookService, BookService>();
             builder.Services.AddScoped< ICategoryService, CategoryService>();
             builder.Services.AddScoped< ILoanService, LoanService>();
 
-
+            //BAckground Services
+            builder.Services.AddHostedService<RefreshTokenCleanupService>();
 
             //Repositories
             builder.Services.AddScoped< IMemberRepository, MemberRepository>();
@@ -89,6 +92,9 @@ namespace Library_API
             builder.Services.AddScoped< IBookRepository, BookRepository>();
             builder.Services.AddScoped< ICategoryRepository, CategoryRepository>();
             builder.Services.AddScoped< ILoanRepository, LoanRepository>();
+
+            //Handlers
+            builder.Services.AddScoped<IAuthorizationHandler, MinimumAgeHandler>();
 
             //Database Configuration
             builder.Services.AddDbContext<AppDbContext>(options =>
@@ -124,6 +130,11 @@ namespace Library_API
                 .AddPolicy(Policies.StaffOnly, policy =>
                     policy.RequireAuthenticatedUser()
                           .RequireRole(Roles.Admin, Roles.Librarian))
+
+                .AddPolicy(Policies.CanBorrow, policy => 
+                    policy.RequireAuthenticatedUser()
+                    .AddRequirements(new MinimumAgeRequirement(14)))
+
                 .SetFallbackPolicy(
                     new AuthorizationPolicyBuilder()
                         .RequireAuthenticatedUser()
@@ -134,6 +145,21 @@ namespace Library_API
                 authorizationBuilder.AddPolicy(permission, policy =>
                     policy.RequireClaim(AppClaims.Permission, permission));
             }
+
+            builder.Services.AddRateLimiter(options =>
+            {
+                options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+                options.AddPolicy(Policies.Auth, context =>
+                RateLimitPartition.GetFixedWindowLimiter(
+                    partitionKey: context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+                    factory: _ => new FixedWindowRateLimiterOptions
+                    {
+                        PermitLimit = 10,
+                        Window = TimeSpan.FromMinutes(1),
+                        QueueLimit = 0,
+                        AutoReplenishment = true,
+                    }));
+            });
 
             //Global Exception Handler
             builder.Services.AddExceptionHandler<GlobalExceptionsHandler>();
@@ -160,6 +186,9 @@ namespace Library_API
             app.UseExceptionHandler();
 
             app.UseHttpsRedirection();
+
+            app.UseRouting();
+            app.UseRateLimiter();
 
             app.UseAuthentication();
             app.UseAuthorization();

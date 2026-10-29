@@ -1,4 +1,5 @@
-﻿using Library_API.DTOs.Author;
+﻿using Library_API.Authorization;
+using Library_API.DTOs.Author;
 using Library_API.Models;
 using Library_API.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -37,7 +38,7 @@ namespace Library_API.Controllers_2
         }
 
         [HttpPost]
-        [Authorize(Policy= AppPermissions.AuthorsCreate)]
+        [HasPermission(AppPermissions.Authors.Create)]
         public async Task<ActionResult<AuthorResponseDto>> Create(CreateAuthorDto dto)
         {
             AuthorResponseDto created = await _authorService.Create(dto);
@@ -45,14 +46,14 @@ namespace Library_API.Controllers_2
         }
 
         [HttpPut("{id:int:min(1)}")]
-        [Authorize(Policy = AppPermissions.AuthorsUpdate)]
+        [HasPermission(AppPermissions.Authors.Update)]
         public async Task<IActionResult> Update(int id, UpdateAuthorDto dto) {
             await _authorService.Update(id, dto);
             return NoContent();
         }
 
         [HttpDelete("{id:int:min(1)}")]
-        [Authorize(Policy = AppPermissions.AuthorsDelete)]
+        [HasPermission(AppPermissions.Authors.Delete)]
         public async Task<IActionResult> Delete(int id)
         {
             await _authorService.Delete(id);

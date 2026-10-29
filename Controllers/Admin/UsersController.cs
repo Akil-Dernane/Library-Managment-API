@@ -1,4 +1,5 @@
-﻿using Library_API.DTOs.ApplicationUser;
+﻿using Library_API.Authorization;
+using Library_API.DTOs.ApplicationUser;
 using Library_API.Models;
 using Library_API.Services.Admin.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -9,7 +10,7 @@ namespace Library_API.Controllers.Admin
 {
     [ApiController]
     [Route("api/admin/users")]
-    [Authorize(Roles = Roles.Admin)]
+    [HasPermission(AppPermissions.Users.Manage)]
     public class UsersController : ControllerBase
     {
         private readonly IAdminUserService _usersService;

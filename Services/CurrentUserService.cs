@@ -1,4 +1,5 @@
-﻿using Library_API.Services.Interfaces;
+﻿using Library_API.Models;
+using Library_API.Services.Interfaces;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 
@@ -18,6 +19,11 @@ public class CurrentUserService : ICurrentUserService
         _httpContextAccessor.HttpContext?
             .User
             .FindFirstValue(JwtRegisteredClaimNames.Sub);
+
+    public string? MemberId =>
+        _httpContextAccessor.HttpContext?
+        .User
+        .FindFirstValue(AppClaims.MemberId);
 
     public bool IsAuthenticated =>
         _httpContextAccessor.HttpContext?

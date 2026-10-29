@@ -1,4 +1,5 @@
-﻿using Library_API.DTOs.Category;
+﻿using Library_API.Authorization;
+using Library_API.DTOs.Category;
 using Library_API.Models;
 using Library_API.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -40,7 +41,7 @@ namespace Library_API.Controllers_2
 
         [HttpPost]
         [Authorize(Roles = Policies.StaffOnly)]
-        [Authorize(Policy = AppPermissions.CategoriesCreate)]
+        [HasPermission(AppPermissions.Categories.Create)]
         public async Task<ActionResult<CategoryResponseDto>> Create(CreateCategoryDto dto)
         {
             CategoryResponseDto created = await _categoryService.Create(dto);
@@ -53,7 +54,7 @@ namespace Library_API.Controllers_2
 
         [HttpPut("{id:int:min(1)}")]
         [Authorize(Roles = Policies.StaffOnly)]
-        [Authorize(Policy = AppPermissions.CategoriesUpdate)]
+        [HasPermission(AppPermissions.Categories.Update)]
         public async Task<IActionResult> Update(int id, UpdateCategoryDto dto)
         {
             await _categoryService.Update(id, dto);
@@ -62,7 +63,7 @@ namespace Library_API.Controllers_2
 
         [HttpDelete("{id:int:min(1)}")]
         [Authorize(Roles = Policies.StaffOnly)]
-        [Authorize(Policy = AppPermissions.CategoriesDelete)]
+        [HasPermission(AppPermissions.Categories.Delete)]
         public async Task<IActionResult> Delete(int id)
         {
             await _categoryService.Delete(id);
