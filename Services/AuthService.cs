@@ -53,74 +53,48 @@ public class AuthService : IAuthService
         await using var transaction =
             await _context.Database.BeginTransactionAsync();
 
-        try
+        var user = new ApplicationUser
         {
-            var user = new ApplicationUser
-            {
-                UserName = dto.Email,
-                Email = dto.Email
-            };
+            UserName = dto.Email,
+            Email = dto.Email
+        };
 
-            var result = await _userManager.CreateAsync(
-                user,
-                dto.Password
-            );
+        var result = await _userManager.CreateAsync(user, dto.Password);
 
-            if (!result.Succeeded)
-            {
-                var errors = result.Errors.ToList();
-
-                if (errors.Any(e =>
-                 e.Code is "DuplicateUserName" or "DuplicateEmail"))
-                {
-                    throw new ConflictException(
-                        "An account with this username or email already exists.");
-                }
-
-                throw new RegistrationFailedException(
-                    result.Errors.Select(e => e.Description)
-                );
-            }
-
-            var roleResult = await _userManager.AddToRoleAsync(
-                user,
-                Roles.Member
-            );
-
-            if (!roleResult.Succeeded)
-            {
-                throw new RegistrationFailedException(
-                    roleResult.Errors.Select(e => e.Description)
-                );
-            }
-
-            var member = new Member
-            {
-                Name = dto.Name,
-                DateOfBirth = dto.DateOfBirth!.Value,
-                UserId = user.Id
-            };
-
-            await _memberRepository.Create(member);
-
-            await transaction.CommitAsync();
-
-            return new RegisterResponseDto(user.Id, user.Email!);
-        }
-        catch
+        if (!result.Succeeded)
         {
-            try
+            if (result.Errors.Any(e =>
+                e.Code is "DuplicateUserName" or "DuplicateEmail"))
             {
-                await transaction.RollbackAsync();
-            }
-            catch (Exception rollbackException)
-            {
-                // Use your application's ILogger<AuthService>.
-                // Log rollbackException without replacing the original error.
+                throw new ConflictException(
+                    "An account with this username or email already exists.");
             }
 
-            throw;
+            throw new RegistrationFailedException(
+                result.Errors.Select(e => e.Description));
         }
+
+        var roleResult = await _userManager.AddToRoleAsync(
+            user, Roles.Member);
+
+        if (!roleResult.Succeeded)
+        {
+            throw new RegistrationFailedException(
+                roleResult.Errors.Select(e => e.Description));
+        }
+
+        var member = new Member
+        {
+            Name = dto.Name,
+            DateOfBirth = dto.DateOfBirth!.Value,
+            UserId = user.Id
+        };
+
+        await _memberRepository.Create(member);
+
+        await transaction.CommitAsync();
+
+        return new RegisterResponseDto(user.Id, user.Email!);
     }
 
     public async Task<AuthResponseDto> LoginAsync(LoginDto dto)
