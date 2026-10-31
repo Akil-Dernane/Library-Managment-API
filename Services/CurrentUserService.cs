@@ -19,6 +19,10 @@ public class CurrentUserService : ICurrentUserService
         _httpContextAccessor.HttpContext?
             .User
             .FindFirstValue(JwtRegisteredClaimNames.Sub);
+    public string? Email =>
+        _httpContextAccessor.HttpContext?
+            .User
+            .FindFirstValue(JwtRegisteredClaimNames.Email);
 
     public string? MemberId =>
         _httpContextAccessor.HttpContext?

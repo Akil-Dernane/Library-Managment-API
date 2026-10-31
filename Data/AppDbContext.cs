@@ -14,6 +14,7 @@ namespace Library_API.Data
         public DbSet<Category> Categories { get; set; }
         public DbSet<Loan> Loans { get; set; }
         public DbSet<RefreshToken> RefreshTokens { get; set; }
+        public DbSet<AuditLog> AuditLogs { get; set; }
 
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -53,6 +54,18 @@ namespace Library_API.Data
                 .WithMany()
                 .HasForeignKey(t => t.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            //AuditLogs
+            modelBuilder.Entity<AuditLog>(e =>
+            {
+                e.Property(a => a.Outcome).HasConversion<string>().HasMaxLength(20);
+                e.Property(a => a.EventType).HasMaxLength(100);
+                e.Property(a => a.DetailsJson).HasColumnType("jsonb");
+
+                e.HasIndex(a => a.TimestampUtc);
+                e.HasIndex(a => new { a.ActorUserId, a.TimestampUtc });
+                e.HasIndex(a => new { a.EventType, a.TimestampUtc });
             });
         }
 

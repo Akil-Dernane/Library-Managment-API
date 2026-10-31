@@ -1,4 +1,5 @@
-﻿using System.Reflection;
+﻿using Library_API.Migrations;
+using System.Reflection;
 
 namespace Library_API.Models
 {
@@ -44,6 +45,10 @@ namespace Library_API.Models
         public static class Users
         {
             public const string Manage = "users.manage";
+        }
+
+        public static class AuditLogs {
+            public const string ReadAll = "audit-logs.read.all";
         }
 
         public static IReadOnlyList<string> All { get; } = typeof(AppPermissions)

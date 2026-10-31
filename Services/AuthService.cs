@@ -1,4 +1,5 @@
 ﻿
+using Library_API.Auditing;
 using Library_API.Data;
 using Library_API.DTOs.Auth;
 using Library_API.Exceptions;
@@ -10,7 +11,6 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using System.Security.Claims;
-using static Library_API.Models.AppPermissions;
 
 namespace Library_API.Services;
 
@@ -26,6 +26,7 @@ public class AuthService : IAuthService
     private readonly IMemberRepository _memberRepository;
 
     private readonly AppDbContext _context;
+    private readonly IAuditService _audit;
 
     public AuthService(
         UserManager<ApplicationUser> userManager,
@@ -34,7 +35,8 @@ public class AuthService : IAuthService
         ITokenService tokens, 
         IOptions<JwtSettings> jwt,
         IMemberRepository memberRepository,
-         AppDbContext context
+         AppDbContext context,
+         IAuditService audit
         )
     {
         _userManager = userManager;
@@ -44,6 +46,7 @@ public class AuthService : IAuthService
         _jwt = jwt.Value;
         _memberRepository = memberRepository;
         _context = context;
+        _audit = audit;
     }
 
 
@@ -92,6 +95,15 @@ public class AuthService : IAuthService
 
         await _memberRepository.Create(member);
 
+        _audit.Record(new AuditEntry(
+            AuditEvents.Registered,
+            AuditOutcome.Success,
+            ActorUserId: user.Id,
+            ActorIdentifier: user.Email?.Trim().ToUpperInvariant(),
+            TargetType: "User",
+            TargetId: user.Id.ToString()
+        ));
+
         await transaction.CommitAsync();
 
         return new RegisterResponseDto(user.Id, user.Email!);
@@ -99,15 +111,44 @@ public class AuthService : IAuthService
 
     public async Task<AuthResponseDto> LoginAsync(LoginDto dto)
     {
-        ApplicationUser user = await _userManager.FindByEmailAsync(dto.Email) ?? throw new InvalidCredentialsException();
+        ApplicationUser? user = await _userManager.FindByEmailAsync(dto.Email);
+
+        if(user is null)
+        {
+            await _audit.WriteAsync(new AuditEntry 
+            (AuditEvents.LoginFailed, 
+                AuditOutcome.Failure,
+                ActorIdentifier: dto.Email.Trim().ToUpperInvariant(),
+                Details: new {reason = "unknown_email"}));
+            throw new InvalidCredentialsException();
+        }
+
 
         SignInResult result = await _signInManager.CheckPasswordSignInAsync(user, dto.Password, lockoutOnFailure: true);
 
         if (result.IsLockedOut)
+        {
+            await _audit.WriteAsync(new AuditEntry(
+                AuditEvents.LoginLockedOut, AuditOutcome.Denied,
+                ActorUserId: user.Id,
+                ActorIdentifier: user.Email?.ToUpperInvariant(),
+                Details: new {reason ="account_locked_out"}));
             throw new AccountLockedException(await _userManager.GetLockoutEndDateAsync(user));
+        }
 
         if (!result.Succeeded)
+        {
+            await _audit.WriteAsync(new AuditEntry(
+                AuditEvents.LoginFailed, AuditOutcome.Failure,
+                ActorUserId: user.Id,
+                ActorIdentifier: user.Email?.ToUpperInvariant(),
+                Details: new {reason = "bad_password"}));
             throw new InvalidCredentialsException();
+        }
+
+        await _audit.WriteAsync(new AuditEntry(
+            AuditEvents.LoginSuccess,AuditOutcome.Success, 
+            ActorUserId:user.Id, ActorIdentifier: user.Email?.ToUpperInvariant()));
 
         var (entity,raw) = NewRefreshToken(user.Id,Guid.NewGuid());
         _context.RefreshTokens.Add(entity);
@@ -156,7 +197,6 @@ public class AuthService : IAuthService
         };
         return (entity, raw);
     }
-
     public async Task<AuthResponseDto> RefreshAsync(string presentedToken)
     {
         string hash = RefreshTokenGenerator.Hash(presentedToken);
@@ -164,44 +204,135 @@ public class AuthService : IAuthService
 
         RefreshToken stored = await _context.RefreshTokens
             .Include(t => t.User)
-            .FirstOrDefaultAsync(t => t.TokenHash == hash) ?? throw new InvalidRefreshTokenException();
+            .FirstOrDefaultAsync(t => t.TokenHash == hash)
+            ?? throw new InvalidRefreshTokenException();
 
-        if(stored.RevokedAtUtc is not null)
+        string? actorIdentifier =
+            stored.User.Email?.Trim().ToUpperInvariant();
+
+        // 1. Check whether the token was already revoked.
+        if (stored.RevokedAtUtc is not null)
         {
-            await RevokeFamilyAsync(stored.FamilyId, now);
+            if (stored.ReplacedByTokenHash is not null)
+            {
+                await RevokeFamilyAsync(stored.FamilyId, now);
+
+                await _audit.WriteAsync(new AuditEntry(
+                    AuditEvents.RefreshReuseDetected,
+                    AuditOutcome.Denied,
+                    ActorUserId: stored.UserId,
+                    ActorIdentifier: actorIdentifier,
+                    TargetType: "RefreshTokenFamily",
+                    TargetId: stored.FamilyId.ToString()
+                ));
+            }
+
             throw new InvalidRefreshTokenException();
         }
 
-        if(stored.ExpiresAtUtc <= now || await _userManager.IsLockedOutAsync(stored.User))
+        // 2. Check expiration.
+        if (stored.ExpiresAtUtc <= now)
         {
+            await _audit.WriteAsync(new AuditEntry(
+                AuditEvents.RefreshTokenExpired,
+                AuditOutcome.Failure,
+                ActorUserId: stored.UserId,
+                ActorIdentifier: actorIdentifier,
+                TargetType: "RefreshToken",
+                TargetId: stored.Id.ToString()
+            ));
+
             throw new InvalidRefreshTokenException();
         }
 
-        var (next, raw) = NewRefreshToken(stored.UserId, stored.FamilyId);
+        // 3. Check account lockout.
+        if (await _userManager.IsLockedOutAsync(stored.User))
+        {
+            await _audit.WriteAsync(new AuditEntry(
+                AuditEvents.RefreshTokenDenied,
+                AuditOutcome.Denied,
+                ActorUserId: stored.UserId,
+                ActorIdentifier: actorIdentifier,
+                TargetType: "RefreshToken",
+                TargetId: stored.Id.ToString()
+            ));
 
-        await using var tx = await _context.Database.BeginTransactionAsync();
+            throw new InvalidRefreshTokenException();
+        }
+
+        // 4. Generate the replacement refresh token.
+        var (next, raw) = NewRefreshToken(
+            stored.UserId,
+            stored.FamilyId
+        );
+
+        // 5. Atomically claim the existing token.
+        await using var tx =
+            await _context.Database.BeginTransactionAsync();
 
         int claimed = await _context.RefreshTokens
             .Where(t => t.Id == stored.Id && t.RevokedAtUtc == null)
             .ExecuteUpdateAsync(s => s
-            .SetProperty(t => t.RevokedAtUtc, now)
-            .SetProperty(t => t.ReplacedByTokenHash, next.TokenHash));
+                .SetProperty(t => t.RevokedAtUtc, now)
+                .SetProperty(t => t.ReplacedByTokenHash, next.TokenHash));
 
-        if (claimed == 0)                                         
+        // 6. Another request may have rotated this token first.
+        if (claimed == 0)
         {
             await tx.RollbackAsync();
-            await RevokeFamilyAsync(stored.FamilyId, now);
+
+            // Re-read the latest state to distinguish actual reuse
+            // from a token revoked for another reason.
+            var latest = await _context.RefreshTokens
+                .AsNoTracking()
+                .FirstOrDefaultAsync(t => t.Id == stored.Id);
+
+            if (latest?.ReplacedByTokenHash is not null)
+            {
+                await RevokeFamilyAsync(stored.FamilyId, now);
+
+                await _audit.WriteAsync(new AuditEntry(
+                    AuditEvents.RefreshReuseDetected,
+                    AuditOutcome.Denied,
+                    ActorUserId: stored.UserId,
+                    ActorIdentifier: actorIdentifier,
+                    TargetType: "RefreshTokenFamily",
+                    TargetId: stored.FamilyId.ToString()
+                ));
+            }
+
             throw new InvalidRefreshTokenException();
         }
 
+        // 7. Save the replacement token.
         _context.RefreshTokens.Add(next);
+
+        // 8. Record successful refresh in the same transaction.
+        _audit.Record(new AuditEntry(
+            AuditEvents.TokenRefreshed,
+            AuditOutcome.Success,
+            ActorUserId: stored.UserId,
+            ActorIdentifier: actorIdentifier,
+            TargetType: "RefreshToken",
+            TargetId: next.Id.ToString()
+        ));
+
         await _context.SaveChangesAsync();
+
+        // 9. Generate access token before committing.
+        var (access, accessExpires) =
+            await BuildAccessTokenAsync(stored.User);
+
+        // 10. Commit rotation and audit record together.
         await tx.CommitAsync();
 
-        var (access, accessExpires) = await BuildAccessTokenAsync(stored.User);
-        return new AuthResponseDto(access, accessExpires, raw, next.ExpiresAtUtc);
+        return new AuthResponseDto(
+            access,
+            accessExpires,
+            raw,
+            next.ExpiresAtUtc
+        );
     }
-
     private async Task RevokeFamilyAsync(Guid familyId, DateTime now)
     {
         await _context.RefreshTokens
@@ -212,14 +343,54 @@ public class AuthService : IAuthService
     public async Task LogoutAsync(string presentedToken)
     {
         string hash = RefreshTokenGenerator.Hash(presentedToken);
-        await _context.RefreshTokens
-            .Where(t => t.TokenHash == hash && t.RevokedAtUtc == null)
-            .ExecuteUpdateAsync(s => s.SetProperty(t => t.RevokedAtUtc, DateTime.UtcNow));
+        DateTime now = DateTime.UtcNow;
+
+        var stored = await _context.RefreshTokens
+            .Include(t => t.User)
+            .FirstOrDefaultAsync(t => t.TokenHash == hash);
+
+        if (stored is null || stored.RevokedAtUtc is not null)
+            return;
+
+        int revoked = await _context.RefreshTokens
+            .Where(t => t.Id == stored.Id && t.RevokedAtUtc == null)
+            .ExecuteUpdateAsync(s =>
+                s.SetProperty(t => t.RevokedAtUtc, now));
+
+        if (revoked == 0)
+            return;
+
+        await _audit.WriteAsync(new AuditEntry(
+            AuditEvents.Logout,
+            AuditOutcome.Success,
+            ActorUserId: stored.UserId,
+            ActorIdentifier: stored.User.Email?.Trim().ToUpperInvariant(),
+            TargetType: "RefreshToken",
+            TargetId: stored.Id.ToString()
+        ));
     }
     public async Task LogoutAllAsync(int userId)
     {
-        await _context.RefreshTokens
+        DateTime now = DateTime.UtcNow;
+
+        int revoked = await _context.RefreshTokens
             .Where(t => t.UserId == userId && t.RevokedAtUtc == null)
-            .ExecuteUpdateAsync(s => s.SetProperty(t => t.RevokedAtUtc, DateTime.UtcNow));
+            .ExecuteUpdateAsync(s =>
+                s.SetProperty(t => t.RevokedAtUtc, now));
+
+        if (revoked == 0)
+            return;
+
+        var user = await _userManager.FindByIdAsync(userId.ToString());
+
+        await _audit.WriteAsync(new AuditEntry(
+            AuditEvents.LogoutAll,
+            AuditOutcome.Success,
+            ActorUserId: userId,
+            ActorIdentifier: user?.Email?.Trim().ToUpperInvariant(),
+            TargetType: "User",
+            TargetId: userId.ToString(),
+            Details: new { revokedTokenCount = revoked }
+        ));
     }
 }
