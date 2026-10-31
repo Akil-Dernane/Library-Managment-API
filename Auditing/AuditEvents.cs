@@ -17,10 +17,11 @@
         public const string Logout = "auth.logout";
         public const string LogoutAll = "auth.logout_all";
 
-
         public const string RoleAssigned = "admin.role.assigned";
         public const string RoleRemoved = "admin.role.removed";
-        public const string RolePermissionsChanged = "admin.role.permissions_changed";
+
+        public const string UserClaimAdded = "admin.user_claim.added";
+        public const string UserClaimRemoved = "admin.user_claim.removed";
 
         public const string RoleClaimAdded = "admin.role_claim.added";
         public const string RoleClaimRemoved = "admin.role_claim.removed";
